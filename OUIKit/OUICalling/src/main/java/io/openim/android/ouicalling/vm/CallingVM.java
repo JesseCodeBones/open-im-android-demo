@@ -70,6 +70,8 @@ public class CallingVM {
     private VideoTrack localVideoTrack;
     //是否是视频通话
     public boolean isVideoCalls = true;
+
+    public boolean isVideoCalls_web = false;
     //已经开始通话
     public boolean isStartCall;
     //呼出
@@ -124,7 +126,8 @@ public class CallingVM {
 
 
     public void setVideoCalls(boolean videoCalls) {
-        isVideoCalls = videoCalls;
+        isVideoCalls = false;
+        isVideoCalls_web =   videoCalls;
     }
 
     private OnMsgSendCallback callBackDismissUI = new OnMsgSendCallback() {

@@ -58,3 +58,5 @@ include ':OUIContact'
 project(':OUIContact').projectDir = new File(settingsDir, '../OUIKit/OUIContact')
 include ':OUICalling'
 project(':OUICalling').projectDir = new File(settingsDir, '../OUIKit/OUICalling')
+include ':RTCLib'
+project(':RTCLib').projectDir = new File(settingsDir, '../RTCLib')

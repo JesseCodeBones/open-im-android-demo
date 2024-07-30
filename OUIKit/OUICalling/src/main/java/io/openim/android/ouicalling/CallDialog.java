@@ -9,6 +9,7 @@ import androidx.core.content.PermissionChecker;
 import androidx.lifecycle.Observer;
 
 import android.Manifest;
+import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
@@ -19,6 +20,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
@@ -93,8 +95,8 @@ public class CallDialog extends BaseDialog {
     UserInfo mUserInfo;
     protected SignalingInfo signalingInfo;
 
-
-
+    protected EasyWindow easyWindow;
+    protected LayoutFloatViewBinding floatViewBinding;
     private boolean isSubscribe;
 
 
@@ -126,7 +128,7 @@ public class CallDialog extends BaseDialog {
     }
 
     private void initView() {
-
+        floatViewBinding = LayoutFloatViewBinding.inflate(getLayoutInflater());
         Window window = getWindow();
         view = DialogCallBinding.inflate(getLayoutInflater());
         window.requestFeature(Window.FEATURE_NO_TITLE);
@@ -187,6 +189,8 @@ public class CallDialog extends BaseDialog {
                     mUserInfo = data.get(0);
                     L.i(String.format("login user=%s:%s", mUserInfo.getUserID(), mUserInfo.getNickname()));
 
+                    floatViewBinding.sAvatar.load(mUserInfo.getFaceURL(), mUserInfo.getNickname());
+
                     /*
                     view.avatar.load(userInfo.getFaceURL());
                     floatViewBinding.sAvatar.load(userInfo.getFaceURL(), userInfo.getNickname());
@@ -204,7 +208,36 @@ public class CallDialog extends BaseDialog {
         }
     }
 
+    public void shrink(boolean isShrink) {
+        if (isShrink) {
+            showFloatView();
+        } else if (null != easyWindow) {
+            easyWindow.cancel();
+        }
 
+        getWindow().setDimAmount(isShrink ? 0f : 1f);
+
+        if (callingVM.isStartCall) {
+            floatViewBinding.sTips.setText(io.openim.android.ouicore.R.string.calling);
+        } else {
+            floatViewBinding.sTips.setText(callingVM.isCallOut ?
+                context.getString(io.openim.android.ouicore.R.string.waiting_tips2) :
+                context.getString(io.openim.android.ouicore.R.string.waiting_tips3));
+        }
+    }
+
+    protected void showFloatView() {
+        // 传入 Activity 对象表示设置成局部的，不需要有悬浮窗权限
+        // 传入 Application 对象表示设置成全局的，但需要有悬浮窗权限
+        if (null == easyWindow) {
+            easyWindow =
+                new EasyWindow<>(BaseApp.inst()).setContentView(floatViewBinding.getRoot()).setGravity(Gravity.END | Gravity.TOP)
+                    // 设置成可拖拽的
+                    .setDraggable();
+            floatViewBinding.shrink.setOnClickListener(v -> shrink(false));
+        }
+        if (!easyWindow.isShowing()) easyWindow.show();
+    }
     public void listener(SignalingInfo signalingInfo) {
 
 
@@ -233,6 +266,10 @@ public class CallDialog extends BaseDialog {
     @Override
     public void dismiss() {
         try {
+            if (null != easyWindow) {
+                easyWindow.cancel();
+            }
+
             insertChatHistory();
             MediaPlayerUtil.INSTANCE.pause();
             MediaPlayerUtil.INSTANCE.release();
@@ -276,7 +313,7 @@ public class CallDialog extends BaseDialog {
     }
 
     public void videoViewRelease() {
-
+        floatViewBinding.shrinkRemoteSpeakerVideoView.release();
     }
     public String buildPrimaryKey() {
         return CallingVM.buildPrimaryKey(signalingInfo);
@@ -292,7 +329,15 @@ public class CallDialog extends BaseDialog {
     }
 
     private void waitingHandle() {
+        if (callingVM.isVideoCalls_web) floatViewBinding.waiting.setVisibility(View.GONE);
 
+        if (callingVM.isStartCall) {
+            floatViewBinding.sTips.setText(io.openim.android.ouicore.R.string.calling);
+        } else {
+            floatViewBinding.sTips.setText(callingVM.isCallOut ?
+                context.getString(io.openim.android.ouicore.R.string.waiting_tips2) :
+                context.getString(io.openim.android.ouicore.R.string.waiting_tips3));
+        }
     }
 
     protected void initWebView() {
@@ -367,13 +412,15 @@ public class CallDialog extends BaseDialog {
         });
         mWebView.setWebChromeClient(new WebChromeClient() {
 
+
+
             @Override
             public void onPermissionRequest(PermissionRequest request) {
                 String[] PERMISSIONS = {
                     PermissionRequest.RESOURCE_AUDIO_CAPTURE,
                     PermissionRequest.RESOURCE_VIDEO_CAPTURE
                 };
-                request.grant(PERMISSIONS);
+                request.grant(request.getResources());
 
             }
 
@@ -386,7 +433,7 @@ public class CallDialog extends BaseDialog {
         String receiver = signalingInfo.getInvitation().getInviteeUserIDList().get(0);
         String sender = signalingInfo.getInvitation().getInviterUserID();
         int callout = callingVM.isCallOut ? 1 : 0;
-        String mediaType = callingVM.isVideoCalls?"v":"a";
+        String mediaType = callingVM.isVideoCalls_web?"v":"a";
         String caller = receiver;
         String callee = sender;
         String query = String.format("?callout=%d&mediatype=%s&roomID=%s&caller=%s&callee=%s", callout,mediaType,roomID, caller, callee);

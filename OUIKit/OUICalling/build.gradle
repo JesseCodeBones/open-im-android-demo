@@ -71,8 +71,12 @@ dependencies {
     implementation "androidx.activity:activity-ktx:1.4.0"
 
     implementation project(':OUICore')
+    implementation project(':OUIConversation')
+    implementation project(':RTCLib')
     implementation 'com.alibaba:arouter-api:1.5.2'
     annotationProcessor 'com.alibaba:arouter-compiler:1.5.2'
+
+    compileOnly(files("libs/libwebrtc.aar"))
 
     //liveKit
     implementation "io.livekit:livekit-android:2.0.1"

@@ -7,7 +7,7 @@ ext {
 
     //android 配置
     androidConfig = [
-            minSdk     : 21,
+            minSdk     : 23,
             targetSdk  : 29,
             compileSdk : 33,
             versionCode: 8,
@@ -24,6 +24,7 @@ ext {
             "OUIMoments" : "io.openim.android.ouimoments",
             "OUIMeeting" : "io.openim.android.ouimeeting",
             "OUIApplet" : "io.openim.android.ouiapplet",
+            "RTCLib":"org.appspot.apprtc"
     ]
 
 }
